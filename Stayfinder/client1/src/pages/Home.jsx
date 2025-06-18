@@ -128,29 +128,22 @@ const Home = () => {
             onChange={handleFilterChange}
             className={styles.input}
           />
-          <div className={styles.datePickerWrapper}>
-            <input
-              type="text"
-              placeholder="Select dates"
-              value={
-                filters.dates
-                  ? `${filters.dates.startDate.toLocaleDateString()} - ${filters.dates.endDate.toLocaleDateString()}`
-                  : ''
-              }
-              onClick={() => setShowDatePicker(!showDatePicker)}
-              className={styles.input}
-              readOnly
-            />
-            {showDatePicker && (
-              <div className={styles.datePicker}>
-                <DateRange
-                  ranges={dateRange}
-                  onChange={handleDateChange}
-                  minDate={new Date()}
-                />
-              </div>
-            )}
-          </div>
+          <input
+            type="text"
+            placeholder="Check in"
+            value={filters.dates ? filters.dates.startDate.toLocaleDateString() : ''}
+            onClick={() => setShowDatePicker(true)}
+            className={styles.input}
+            readOnly
+          />
+          <input
+            type="text"
+            placeholder="Check out"
+            value={filters.dates ? filters.dates.endDate.toLocaleDateString() : ''}
+            onClick={() => setShowDatePicker(true)}
+            className={styles.input}
+            readOnly
+          />
           <input
             type="text"
             placeholder="Add guests"
@@ -162,6 +155,18 @@ const Home = () => {
             Search
           </button>
         </div>
+        {showDatePicker && (
+          <div className={styles.datePicker}>
+            <DateRange
+              ranges={dateRange}
+              onChange={handleDateChange}
+              minDate={new Date()}
+            />
+            <button onClick={() => setShowDatePicker(false)} className={styles.closeButton}>
+              Close
+            </button>
+          </div>
+        )}
         <div>
           <label className={styles.sliderLabel}>Price Range: ${priceRange[0]} - ${priceRange[1]}</label>
           <Slider
@@ -187,21 +192,27 @@ const Home = () => {
           )}
         </div>
       </form>
-      <div className={styles.grid}>
-        {listings.length === 0 ? (
-          <p>No listings found. Ensure the backend is running and seed data is loaded.</p>
-        ) : (
-          listings.map((listing) => (
-            <Link to={`/listing/${listing._id}`} key={listing._id} className={styles.card}>
-              <img src={listing.images[0]} alt={listing.title} className={styles.cardImage} />
-              <div className={styles.cardContent}>
-                <h2 className={styles.cardTitle}>{listing.title}</h2>
-                <p className={styles.cardLocation}>{listing.location}</p>
-                <p className={styles.cardPrice}>${listing.price}/day</p>
-              </div>
-            </Link>
-          ))
-        )}
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>Popular homes in [Location] <span className={styles.arrow}>›</span></h2>
+        <div className={styles.grid}>
+          {listings.length === 0 ? (
+            <p>No listings found. Ensure the backend is running and seed data is loaded.</p>
+          ) : (
+            listings.map((listing) => (
+              <Link to={`/listing/${listing._id}`} key={listing._id} className={styles.card}>
+                <img src={listing.images[0]} alt={listing.title} className={styles.cardImage} />
+                <div className={styles.cardContent}>
+                  <h2 className={styles.cardTitle}>{listing.title}</h2>
+                  <p className={styles.cardLocation}>{listing.location}</p>
+                  <p className={styles.cardPrice}>
+                    ${listing.price}/day <span className={styles.rating}>★4.9</span>
+                  </p>
+                  <span className={styles.badge}>Guest favourite</span>
+                </div>
+              </Link>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
