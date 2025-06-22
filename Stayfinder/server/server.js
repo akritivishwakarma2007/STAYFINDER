@@ -11,15 +11,29 @@ dotenv.config();
 
 const app = express();
 
-// Middleware
-// app.use(cors());
-app.use(cors({
-  origin: 'https://assignment2-six-beta.vercel.app',
-  credentials: true
-}));
+// ✅ CORS middleware
+const allowedOrigins = [
+  "http://localhost:5173", // Vite dev server
+  "https://assignment2-six-beta.vercel.app", // Deployed Vercel frontend
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
+
+// ✅ JSON body parser
 app.use(express.json());
 
-// Routes
+// ✅ Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/listings", listingsRouter);
@@ -27,11 +41,11 @@ app.use("/api/bookings", bookingsRouter);
 
 const PORT = process.env.PORT || 5000;
 
-
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
