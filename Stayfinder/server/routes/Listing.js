@@ -1,74 +1,94 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const Listing = require('../models/Listing');
-const { authMiddleware, hostMiddleware } = require('../middleware/auth');
+const Listing = require("../models/Listing");
+const Booking = require("../models/Booking");
+const authenticateToken = require("../middleware/auth");
 
-router.get('/', async (req, res) => {
+// GET /api/listings (with filters)
+router.get("/", async (req, res) => {
   try {
-    const listings = await Listing.find().populate('hostId', 'name');
-    res.json(listings);
+    const { location, price, guests } = req.query;
+    const query = {};
+
+    if (location) query.location = new RegExp(location, "i");
+    if (price) {
+      const priceNum = Number(price);
+      if (!isNaN(priceNum)) query.price = { $lte: priceNum };
+    }
+    if (guests) {
+      const guestsNum = Number(guests);
+      if (!isNaN(guestsNum) && guestsNum > 0) query.capacity = { $gte: guestsNum };
+    }
+
+    const listingsData = await Listing.find(query);
+    res.json(listingsData);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Error fetching listings", error });
   }
 });
 
-router.get('/:id', async (req, res) => {
+// GET /api/listings/price-distribution
+router.get("/price-distribution", async (req, res) => {
   try {
-    const listing = await Listing.findById(req.params.id).populate('hostId', 'name');
-    if (!listing) return res.status(404).json({ message: 'Listing not found' });
-    res.json(listing);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+    const listings = await Listing.find({}, "price");
+    const prices = listings.map((l) => l.price);
+    const minPrice = Math.min(...prices) || 0;
+    const maxPrice = Math.max(...prices) || 1000;
+    const buckets = 10;
+    const step = (maxPrice - minPrice) / buckets;
+    const histogram = Array(buckets).fill(0);
 
-router.post('/', authMiddleware, hostMiddleware, async (req, res) => {
-  const { title, description, price, images, location, availability } = req.body;
-  try {
-    const listing = new Listing({
-      title,
-      description,
-      price,
-      images,
-      location,
-      availability,
-      hostId: req.user.id,
+    prices.forEach((price) => {
+      const index = Math.min(Math.floor((price - minPrice) / step), buckets - 1);
+      histogram[index]++;
     });
-    await listing.save();
-    res.status(201).json(listing);
+
+    res.json({
+      minPrice,
+      maxPrice,
+      histogram,
+      bucketSize: step,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error fetching price distribution:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-// Add PUT and DELETE routes similarly
-router.put('/:id', authMiddleware, hostMiddleware, async (req, res) => {
+// GET /api/listings/:id
+router.get("/:id", async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id);
-    if (!listing) return res.status(404).json({ message: 'Listing not found' });
-    if (listing.hostId.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Unauthorized' });
-    }
-    Object.assign(listing, req.body);
-    await listing.save();
+    if (!listing) return res.status(404).json({ message: "Listing not found" });
     res.json(listing);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error fetching listing:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-router.delete('/:id', authMiddleware, hostMiddleware, async (req, res) => {
+// GET /api/listings/:id/availability
+router.get("/:id/availability", async (req, res) => {
   try {
-    const listing = await Listing.findById(req.params.id);
-    if (!listing) return res.status(404).json({ message: 'Listing not found' });
-    if (listing.hostId.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Unauthorized' });
-    }
-    await listing.remove();
-    res.json({ message: 'Listing deleted' });
+    const bookings = await Booking.find({ listingId: req.params.id });
+    const bookedDates = [];
+    bookings.forEach((booking) => {
+      const start = new Date(booking.startDate);
+      const end = new Date(booking.endDate);
+      for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
+        bookedDates.push(new Date(d));
+      }
+    });
+    res.json({ bookedDates });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error fetching availability:", error);
+    res.status(500).json({ message: "Server error" });
   }
+});
+
+// GET /api/listings/test
+router.get("/test", (req, res) => {
+  res.send("Server is working");
 });
 
 module.exports = router;

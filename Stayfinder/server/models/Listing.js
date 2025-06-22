@@ -1,13 +1,12 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const listingSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  description: { type: String, required: true },
+  description: String,
   price: { type: Number, required: true },
-  images: [{ type: String }],
-  location: { type: String, required: true },
-  availability: [{ startDate: Date, endDate: Date }],
-  hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-}, { timestamps: true });
+  location: String,
+  images: [String],
+  capacity: Number,
+});
 
-module.exports = mongoose.model('Listing', listingSchema);
+module.exports = mongoose.model("Listing", listingSchema);

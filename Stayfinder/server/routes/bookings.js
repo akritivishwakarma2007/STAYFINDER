@@ -1,73 +1,40 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const Listing = require('../models/Listing');
-const { authMiddleware, hostMiddleware } = require('../middleware/auth');
+const Booking = require("../models/Booking");
+const authenticateToken = require("../middleware/auth");
 
-router.get('/', async (req, res) => {
+router.post("/", authenticateToken, async (req, res) => {
   try {
-    const listings = await Listing.find().populate('hostId', 'name');
-    res.json(listings);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+    const { listingId, startDate, endDate } = req.body;
+    console.log("Received booking request:", req.body);
+    if (!listingId || !startDate || !endDate) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
 
-router.get('/:id', async (req, res) => {
-  try {
-    const listing = await Listing.findById(req.params.id).populate('hostId', 'name');
-    if (!listing) return res.status(404).json({ message: 'Listing not found' });
-    res.json(listing);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-router.post('/', authMiddleware, hostMiddleware, async (req, res) => {
-  const { title, description, price, images, location, availability } = req.body;
-  try {
-    const listing = new Listing({
-      title,
-      description,
-      price,
-      images,
-      location,
-      availability,
-      hostId: req.user.id,
+    // Check for overlapping bookings
+    const existingBookings = await Booking.find({
+      listingId,
+      $or: [
+        { startDate: { $lte: endDate }, endDate: { $gte: startDate } },
+      ],
     });
-    await listing.save();
-    res.status(201).json(listing);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
-});
 
-// Add PUT and DELETE routes similarly
-router.put('/:id', authMiddleware, hostMiddleware, async (req, res) => {
-  try {
-    const listing = await Listing.findById(req.params.id);
-    if (!listing) return res.status(404).json({ message: 'Listing not found' });
-    if (listing.hostId.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Unauthorized' });
+    if (existingBookings.length > 0) {
+      return res.status(400).json({ message: "Dates are not available" });
     }
-    Object.assign(listing, req.body);
-    await listing.save();
-    res.json(listing);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
-});
 
-router.delete('/:id', authMiddleware, hostMiddleware, async (req, res) => {
-  try {
-    const listing = await Listing.findById(req.params.id);
-    if (!listing) return res.status(404).json({ message: 'Listing not found' });
-    if (listing.hostId.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Unauthorized' });
-    }
-    await listing.remove();
-    res.json({ message: 'Listing deleted' });
+    const booking = new Booking({
+      listingId,
+      userId: req.user.id,
+      startDate,
+      endDate,
+    });
+
+    await booking.save();
+    res.status(201).json({ message: "Booking created", booking });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error creating booking:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
