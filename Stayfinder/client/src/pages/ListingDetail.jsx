@@ -17,7 +17,7 @@ const ListingDetail = () => {
   ]);
   const [disabledDates, setDisabledDates] = useState([]);
   const [error, setError] = useState(null);
-  const { user } = useContext(AuthContext);
+  const { user, loading, logout } = useContext(AuthContext); // Added logout and loading
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -58,6 +58,7 @@ const ListingDetail = () => {
       navigate("/login"); // Redirect to login page
       return;
     }
+    if (loading) return;
     try {
       const res = await api.post("/api/bookings", { listingId: id, startDate, endDate }, {
         headers: { Authorization: `Bearer ${user.token}` },
@@ -70,12 +71,23 @@ const ListingDetail = () => {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    alert("Logged out successfully!");
+    navigate("/");
+  };
+
   if (error) return <div>{error}</div>;
   if (!listing) return <div>Loading...</div>;
 
   return (
     <div className={styles.container}>
       <h1 className={styles.heading}>{listing.title}</h1>
+      {user && (
+        <button onClick={handleLogout} className={styles.button}>
+          Logout
+        </button>
+      )}
       <div className={styles.grid}>
         <div>
           <img
@@ -86,7 +98,7 @@ const ListingDetail = () => {
         </div>
         <div>
           <p className={styles.description}>{listing.description}</p>
-          <p className={styles.price}>${listing.price}/day</p>
+          <p className={styles.price}>₹{listing.price}/day</p> {/* Changed to ₹ */}
           <p className={styles.location}>{listing.location}</p>
           <form onSubmit={handleBooking} className={styles.form}>
             <DateRange
@@ -95,7 +107,7 @@ const ListingDetail = () => {
               disabledDates={disabledDates}
               minDate={new Date()}
             />
-            <button type="submit" className={styles.button}>
+            <button type="submit" className={styles.button} disabled={loading}>
               Book Now
             </button>
           </form>

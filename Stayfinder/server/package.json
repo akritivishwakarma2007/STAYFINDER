@@ -6,9 +6,8 @@
   "types": "module",
   "scripts": {
     "start": "node server.js",
-    "seed": "node seed/seed.js",
-     "dev": "nodemon index.js"
-
+    "seed": "node seed.js",
+    "dev": "nodemon index.js"
   },
   "keywords": [],
   "author": "",
@@ -22,7 +21,6 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.17.0",
-    "mongoose": "^8.15.2"
+    "mongoose": "^8.16.0"
   }
- 
 }

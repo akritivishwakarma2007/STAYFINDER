@@ -31,12 +31,12 @@ const Home = () => {
     dates: null,
     guests: { adults: 0, children: 0, infants: 0, pets: 0 },
   });
-  const [priceRange, setPriceRange] = useState([0, 1000]);
+  const [priceRange, setPriceRange] = useState([0, 10000]);
   const [priceData, setPriceData] = useState({
     minPrice: 0,
-    maxPrice: 1000,
+    maxPrice: 10000,
     histogram: [],
-    bucketSize: 100,
+    bucketSize: 1000,
   });
   const [error, setError] = useState(null);
   const [dateRange, setDateRange] = useState([
@@ -51,29 +51,31 @@ const Home = () => {
   useEffect(() => {
     console.log("useEffect triggered", { hasInitialized });
     if (hasInitialized) return;
-const fetchListings = async () => {
-  try {
-    const query = new URLSearchParams({
-      ...(filters.location && { location: filters.location }),
-      ...(filters.maxPrice && { price: filters.maxPrice }),
-      ...(filters.guests.adults > 0 && {
-        guests:
-          filters.guests.adults +
-          filters.guests.children +
-          filters.guests.infants,
-      }),
-    }).toString();
-    const res = await axios.get(`${API_URL}/api/listings?${query}`, {
-      headers: { "Authorization": undefined },
-    });
-    setListings(res.data);
-    setError(null);
-  } catch (error) {
-    console.error("Failed to fetch listings:", error.response || error);
-    setListings([]);
-    setError("Failed to load listings. Ensure the backend is running.");
-  }
-};
+
+    const fetchListings = async () => {
+      try {
+        const query = new URLSearchParams({
+          ...(filters.location && { location: filters.location }),
+          ...(filters.maxPrice && { price: filters.maxPrice }),
+          ...(filters.guests.adults > 0 && {
+            guests:
+              filters.guests.adults +
+              filters.guests.children +
+              filters.guests.infants,
+          }),
+        }).toString();
+        const res = await axios.get(`${API_URL}/api/listings?${query}`, {
+          headers: { Authorization: undefined },
+        });
+        setListings(res.data);
+        setError(null);
+      } catch (error) {
+        console.error("Failed to fetch listings:", error.response || error);
+        setListings([]);
+        setError("Failed to load listings. Ensure the backend is running.");
+      }
+    };
+
     const fetchPriceDistribution = async () => {
       try {
         console.log(
@@ -91,12 +93,12 @@ const fetchListings = async () => {
         console.error("Failed to fetch price distribution:", error);
         setPriceData({
           minPrice: 0,
-          maxPrice: 1000,
+          maxPrice: 10000,
           histogram: [],
-          bucketSize: 100,
+          bucketSize: 1000,
         });
-        setPriceRange([0, 1000]);
-        setFilters((prev) => ({ ...prev, maxPrice: 1000 }));
+        setPriceRange([0, 10000]);
+        setFilters((prev) => ({ ...prev, maxPrice: 10000 }));
         await fetchListings();
         setHasInitialized(true);
       }
@@ -390,8 +392,7 @@ const fetchListings = async () => {
         <div className={styles.grid}>
           {listings.length === 0 ? (
             <p>
-              No listings found.{" "}
-              {error || "Ensure the backend is running."}
+              No listings found. {error || "Ensure the backend is running."}
             </p>
           ) : (
             listings.map((listing) => (
@@ -408,10 +409,7 @@ const fetchListings = async () => {
                 <div className={styles.cardContent}>
                   <h2 className={styles.cardTitle}>{listing.title}</h2>
                   <p className={styles.cardLocation}>{listing.location}</p>
-                  <p className={styles.cardPrice}>
-                    ₹{listing.price}/day{" "}
-                    <span className={styles.rating}>★4.9</span>
-                  </p>
+                  <p className={styles.cardPrice}>₹{listing.price}/day</p>
                   <span className={styles.badge}>Guest favourite</span>
                 </div>
               </Link>
