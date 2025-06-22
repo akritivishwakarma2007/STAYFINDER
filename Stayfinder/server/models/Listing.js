@@ -8,6 +8,7 @@ const listingSchema = new mongoose.Schema({
   price: { type: Number, required: true },
   location: { type: String, required: true },
   host: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  capacity: { type: Number, default: 20},
 });
 
 module.exports = mongoose.model('Listing', listingSchema);
