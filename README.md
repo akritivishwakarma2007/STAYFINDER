@@ -42,8 +42,6 @@ MongoDB for storing users, hotels & bookings
 ⚙️ Installation & Setup
 Clone the Repository
 cd stayfinder
-
-
 Setup Backend
 cd server
 npm install
